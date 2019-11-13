@@ -1,0 +1,11 @@
+# Gradle stuff
+**/.gradle/
+**/build/
+
+# Java stuff
+*.class
+
+# IDE stuff
+*.iml
+.idea/
+**/out/
