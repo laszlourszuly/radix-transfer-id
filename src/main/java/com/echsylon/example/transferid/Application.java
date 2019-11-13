@@ -38,6 +38,7 @@ class Application {
 
     void start() {
         if (!isStarted.getAndSet(true)) {
+            print("ACCOUNT", "ACTION", "DATA", "ID");
             setupSystem();
             setupUsers();
             setupTokens();
@@ -163,12 +164,14 @@ class Application {
                     byte[] attachment = transfer.getAttachment().orElse(new byte[0]);
                     String transferId = new String(Base64.getDecoder().decode(attachment), UTF_8);
                     String data = transfer.getAmount().toString();
-                    print(name.toUpperCase(), "Transfer", data, transferId);
+                    String sign = user.getAddress().equals(transfer.getFrom()) ? "-" : "+";
+                    print(name, "Transfer", sign + data, transferId);
                 }));
     }
 
     private void observeMessages(String name, RadixApplicationAPI user) {
         disposables.add(user.observeMessages()
+                .filter(message -> user.getAddress().equals(message.getFrom()))
                 .subscribe(message -> {
                     // When we attached our message to the atom, we also
                     // included the application generated transfer id, hence
@@ -180,18 +183,14 @@ class Application {
                     String[] particles = text.split("::", 2);
                     String messageText = particles.length > 1 ? particles[1] : particles[0];
                     String transferId = particles.length > 1 ? particles[0] : "";
-                    print(name.toUpperCase(), "Message", messageText, transferId);
+                    print(name, "Message", messageText, transferId);
                 }));
     }
 
     private void observeBalance(String name, RadixApplicationAPI user) {
         disposables.add(user
                 .observeBalance(token)
-                .subscribe(balance -> print(
-                        name.toUpperCase(),
-                        "Balance",
-                        balance.toString(),
-                        null)));
+                .subscribe(balance -> print(name, "Balance", balance.toString(), null)));
     }
 
     private RRI getUniqueId(RadixApplicationAPI user) {
@@ -203,22 +202,22 @@ class Application {
     }
 
     private void print(String name, String action, String data, String id) {
-        int nameLength = Math.min(name.length(), 8);
-        String nameTag = String.format("[%s]", name.substring(0, nameLength));
+        int nameLength = Math.min(name.length(), 10);
+        String nameTag = name.substring(0, nameLength);
 
-        int actionLength = Math.min(action.length(), 10);
+        int actionLength = Math.min(action.length(), 12);
         String actionTag = action.substring(0, actionLength);
 
-        int dataLength = Math.min(data.length(), 40);
+        int dataLength = Math.min(data.length(), 30);
         String dataTag = data.substring(0, dataLength);
 
         String idTag = "";
         if (id != null) {
-            int idLength = Math.min(id.length(), 40);
+            int idLength = Math.min(id.length(), 90);
             idTag = id.substring(0, idLength);
         }
 
-        System.out.println(String.format("%-10s%-10s%-40s%-40s",
+        System.out.println(String.format("%-10s%-12s%-30s%-90s",
                 nameTag,
                 actionTag,
                 dataTag,
